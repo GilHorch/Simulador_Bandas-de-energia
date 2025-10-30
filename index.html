@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simulador de Bandas de Energia (Semicondutor)</title>
+  <style>
+    :root{font-family:system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;}
+    body{margin:18px;background:#f6f7fb;color:#111}
+    h1{font-size:18px;margin:0 0 8px}
+    .app{display:grid;grid-template-columns:1fr 380px;gap:16px}
+    .card{background:white;border-radius:10px;box-shadow:0 6px 18px rgba(20,30,60,0.06);padding:12px}
+    canvas{width:100%;height:360px;background:#0b1220;border-radius:8px;display:block}
+    label{display:block;font-size:13px;margin:8px 0 4px}
+    .row{display:flex;gap:8px;align-items:center}
+    input[type=range]{width:100%}
+    .small{font-size:13px;color:#444}
+    .controls{display:flex;flex-direction:column;gap:8px}
+    .flex-between{display:flex;justify-content:space-between;align-items:center}
+    .button{background:#0b63d8;color:white;padding:8px 10px;border-radius:8px;border:0;cursor:pointer}
+    .muted{color:#666;font-size:13px}
+    .footer{margin-top:10px;font-size:13px;color:#555}
+  </style>
+</head>
+<body>
+  <h1>Simulador de Bandas de Energia — Semicondutor</h1>
+  <div class="app">
+    <div class="card">
+      <canvas id="bandCanvas" width="900" height="520"></canvas>
+      <div class="footer">Eixo k (1/nm) horizontal. Energia em eV vertical. As bandas são parabolas — modelo de massa efetiva.</div>
+    </div>
+
+    <div class="card">
+      <div class="controls">
+        <div class="flex-between"><strong>Parâmetros</strong><button id="reset" class="button">Reset</button></div>
+
+        <label>Band gap Eg: <span id="EgVal">1.12</span> eV</label>
+        <input id="Eg" type="range" min="0.1" max="3.5" step="0.01" value="1.12">
+
+        <label>Massa efetiva do elétron m*e: <span id="meVal">0.26</span> m₀</label>
+        <input id="me" type="range" min="0.05" max="1.5" step="0.01" value="0.26">
+
+        <label>Massa efetiva do buraco m*h: <span id="mhVal">0.36</span> m₀</label>
+        <input id="mh" type="range" min="0.05" max="2.0" step="0.01" value="0.36">
+
+        <label>Nível de Fermi Ef: <span id="EfVal">0.56</span> eV</label>
+        <input id="Ef" type="range" min="-1.0" max="4.0" step="0.01" value="0.56">
+
+        <label>Temperatura T: <span id="TVal">300</span> K</label>
+        <input id="T" type="range" min="1" max="1000" step="1" value="300">
+
+        <label>k máximo (|k|): <span id="kMaxVal">3</span> 1/nm</label>
+        <input id="kMax" type="range" min="0.5" max="10" step="0.1" value="3">
+
+        <div class="row"><input type="checkbox" id="showDOS" checked><label for="showDOS" class="small">Mostrar Densidade de Estados (aprox.)</label></div>
+        <div class="row"><input type="checkbox" id="showOcc" checked><label for="showOcc" class="small">Colorir segundo ocupação (Fermi-Dirac)</label></div>
+
+        <div class="muted">Nota: modelo simples 3D com bandas parabólicas (E ~ k²). Ótimo para visualizar efeitos qualitativos.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+// Constantes físicas
+const hbar = 6.582119569e-16; // eV*s
+const m_e = 9.10938356e-31; // kg
+const kB = 8.617333262e-5; // eV/K
+
+// Elementos
+const canvas = document.getElementById('bandCanvas');
+const ctx = canvas.getContext('2d');
+const EgSlider = document.getElementById('Eg');
+const meSlider = document.getElementById('me');
+const mhSlider = document.getElementById('mh');
+const EfSlider = document.getElementById('Ef');
+const TSlider = document.getElementById('T');
+const kMaxSlider = document.getElementById('kMax');
+const showDOS = document.getElementById('showDOS');
+const showOcc = document.getElementById('showOcc');
+
+// Labels
+const EgVal = document.getElementById('EgVal');
+const meVal = document.getElementById('meVal');
+const mhVal = document.getElementById('mhVal');
+const EfVal = document.getElementById('EfVal');
+const TVal = document.getElementById('TVal');
+const kMaxVal = document.getElementById('kMaxVal');
+
+// Reset
+document.getElementById('reset').onclick = () => {
+  EgSlider.value = 1.12; meSlider.value = 0.26; mhSlider.value = 0.36; EfSlider.value = 0.56; TSlider.value = 300; kMaxSlider.value = 3;
+  updateAndDraw();
+}
+
+function updateLabels(){
+  EgVal.textContent = Number(EgSlider.value).toFixed(2);
+  meVal.textContent = Number(meSlider.value).toFixed(2);
+  mhVal.textContent = Number(mhSlider.value).toFixed(2);
+  EfVal.textContent = Number(EfSlider.value).toFixed(2);
+  TVal.textContent = Number(TSlider.value);
+  kMaxVal.textContent = Number(kMaxSlider.value);
+}
+
+[EgSlider, meSlider, mhSlider, EfSlider, TSlider, kMaxSlider, showDOS, showOcc].forEach(el=>el.addEventListener('input', updateAndDraw));
+
+function fermi(E, Ef, T){
+  if(T<=0) return E<Ef?1:0;
+  const x = (E - Ef)/(kB*T);
+  // prevent overflow
+  if(x > 700) return 0;
+  if(x < -700) return 1;
+  return 1 / (1 + Math.exp(x));
+}
+
+function parabolaEnergy(k_nm, mstar, E0){
+  const k_m = k_nm * 1e9; // nm^-1 -> m^-1
+  return E0 + (hbar*hbar * k_m * k_m) / (2 * mstar * m_e);
+}
+
+function computeDOS_3D(E, Ec, mstar){
+  // DOS for 3D parabolic band (proportional): g(E) ~ sqrt(E-Ec) for E>Ec
+  if(E <= Ec) return 0;
+  return Math.sqrt(E - Ec) * Math.pow(mstar, 1.5);
+}
+
+function updateAndDraw(){
+  updateLabels();
+  draw();
+}
+
+function draw(){
+  // read params
+  const Eg = Number(EgSlider.value);
+  const meff = Number(meSlider.value);
+  const mhff = Number(mhSlider.value);
+  const Ef = Number(EfSlider.value);
+  const T = Number(TSlider.value);
+  const kmax = Number(kMaxSlider.value);
+  const show_dos = showDOS.checked;
+  const show_occ = showOcc.checked;
+
+  // canvas clear
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const W = canvas.width, H = canvas.height;
+
+  // generate k points
+  const N = 600;
+  const ks = new Array(N);
+  for(let i=0;i<N;i++) ks[i] = -kmax + 2*kmax*(i/(N-1));
+
+  // compute bands
+  const Ec0 = Eg; // conduction band minimum at E = Eg
+  const Ev0 = 0;  // valence band maximum at E = 0
+  const E_c = ks.map(k => parabolaEnergy(k, meff, Ec0));
+  const E_v = ks.map(k => parabolaEnergy(k, mhff, Ev0) * -1 + 0); // make it downward from Ev0
+  // Note: parabolaEnergy returns positive k^2 term. For valence invert it.
+
+  // find energy window
+  const allE = E_c.concat(E_v).concat([Ef]);
+  let Emin = Math.min(...allE);
+  let Emax = Math.max(...allE);
+  // margin
+  const margin = 0.15*(Emax - Emin + 1e-6);
+  Emin -= margin; Emax += margin;
+
+  // coordinate transforms
+  function xOfK(k){ return ( (k + kmax) / (2*kmax) ) * (W - 80) + 50; }
+  function yOfE(E){ return H - 40 - ( (E - Emin)/(Emax - Emin) ) * (H - 80); }
+
+  // background grid
+  ctx.fillStyle = '#07101a'; ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)'; ctx.lineWidth = 1;
+  for(let i=0;i<6;i++){
+    const y = 40 + i*(H-80)/5;
+    ctx.beginPath(); ctx.moveTo(40,y); ctx.lineTo(W-20,y); ctx.stroke();
+  }
+
+  // Draw DOS at right (normalized)
+  const dosWidth = show_dos ? 120 : 0;
+  const dosX0 = W - dosWidth - 10;
+
+  if(show_dos){
+    // compute DOS arrays
+    const energies = [];
+    const dosVals = [];
+    const M = 300;
+    for(let i=0;i<M;i++){
+      const E = Emin + (i/(M-1))*(Emax - Emin);
+      const gC = computeDOS_3D(E, Ec0, meff);
+      const gV = computeDOS_3D(-E + 0, 0, mhff); // qualitative inversion
+      energies.push(E);
+      dosVals.push(gC + gV);
+    }
+    // normalize
+    const maxDos = Math.max(...dosVals) || 1;
+    ctx.beginPath();
+    for(let i=0;i<M;i++){
+      const x = dosX0 + (dosVals[i]/maxDos) * (dosWidth-10);
+      const y = yOfE(energies[i]);
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    }
+    ctx.strokeStyle = 'rgba(200,200,255,0.8)'; ctx.lineWidth = 2; ctx.stroke();
+    // fill
+    ctx.lineTo(dosX0, yOfE(energies[energies.length-1]));
+    ctx.lineTo(dosX0, yOfE(energies[0]));
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(200,200,255,0.06)'; ctx.fill();
+
+    // label
+    ctx.fillStyle = '#bbb'; ctx.font = '12px system-ui'; ctx.fillText('DOS (qualit.)', dosX0+4, 22);
+  }
+
+  // axes labels
+  ctx.strokeStyle = '#444'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(40, H-40); ctx.lineTo(W-20, H-40); ctx.stroke(); // x axis
+  ctx.beginPath(); ctx.moveTo(40, H-40); ctx.lineTo(40, 20); ctx.stroke(); // y axis
+  ctx.fillStyle = '#ccc'; ctx.font='12px system-ui'; ctx.fillText('k (1/nm)', W/2 - 20, H-10);
+
+  // y ticks - energies
+  ctx.fillStyle = '#9fb0c8'; ctx.font='12px system-ui';
+  const niceTicks = 7;
+  for(let i=0;i<=niceTicks;i++){
+    const E = Emin + i*(Emax - Emin)/niceTicks;
+    const y = yOfE(E);
+    ctx.fillText(E.toFixed(2)+' eV', 6, y+4);
+  }
+
+  // draw bands
+  // conduction band (blue)
+  ctx.lineWidth = 2.5; ctx.beginPath();
+  for(let i=0;i<N;i++){
+    const x = xOfK(ks[i]); const y = yOfE(E_c[i]);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#66b3ff'; ctx.stroke();
+
+  // valence band (orange)
+  ctx.beginPath();
+  for(let i=0;i<N;i++){
+    const x = xOfK(ks[i]); const y = yOfE(E_v[i]);
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  }
+  ctx.strokeStyle = '#ffb366'; ctx.lineWidth = 2.5; ctx.stroke();
+
+  // fill occupancy color if requested (draw colored points along bands)
+  if(show_occ){
+    // conduction
+    for(let i=0;i<N;i++){
+      const x = xOfK(ks[i]); const y = yOfE(E_c[i]);
+      const occ = 1 - fermi(E_c[i], Ef, T); // electron occupancy in conduction: ~ 1 - f(E)
+      // map occ to alpha
+      const alpha = Math.min(1, Math.max(0, occ));
+      ctx.fillStyle = `rgba(100,170,255,${0.05 + 0.9*alpha})`;
+      ctx.fillRect(x-1.5, y-1.5, 3,3);
+    }
+    // valence band (holes -> 1-f(E)) color
+    for(let i=0;i<N;i++){
+      const x = xOfK(ks[i]); const y = yOfE(E_v[i]);
+      const holeOcc = 1 - fermi(E_v[i], Ef, T); // hole density
+      const alpha = Math.min(1, Math.max(0, holeOcc));
+      ctx.fillStyle = `rgba(255,160,100,${0.05 + 0.9*alpha})`;
+      ctx.fillRect(x-1.5, y-1.5, 3,3);
+    }
+  }
+
+  // draw Ef line
+  ctx.beginPath(); ctx.moveTo(40, yOfE(Ef)); ctx.lineTo(W - (show_dos?dosWidth:20), yOfE(Ef));
+  ctx.strokeStyle = 'rgba(200,255,200,0.9)'; ctx.setLineDash([6,4]); ctx.lineWidth = 1.2; ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = '#bfeebb'; ctx.font='12px system-ui'; ctx.fillText('Ef = '+Ef.toFixed(2)+' eV', 44, yOfE(Ef)-8);
+
+  // labels for band edges
+  ctx.fillStyle = '#84c3ff'; ctx.fillText('Banda de condução (Ec)', 60, yOfE(Ec0)+16);
+  ctx.fillStyle = '#ffdfb3'; ctx.fillText('Banda de valência (Ev)', 60, yOfE(Ev0)-8);
+
+  // info box
+  ctx.fillStyle = 'rgba(0,0,0,0.38)'; ctx.fillRect(W-260, H-110, 230, 90);
+  ctx.fillStyle = '#fff'; ctx.font='12px system-ui';
+  ctx.fillText('Eg = ' + Eg.toFixed(3) + ' eV', W-250, H-90);
+  ctx.fillText('m*e = ' + meff.toFixed(2) + ' m₀', W-250, H-72);
+  ctx.fillText('m*h = ' + mhff.toFixed(2) + ' m₀', W-250, H-54);
+  ctx.fillText('T = ' + T + ' K', W-250, H-36);
+  ctx.fillText('kmax = ' + kmax.toFixed(2) + ' 1/nm', W-250, H-18);
+}
+
+// initial draw
+updateAndDraw();
+</script>
+</body>
+</html>
