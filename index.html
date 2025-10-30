@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simulador de Átomo de Silício</title>
+    <title>Rede de Átomos de Silício</title>
     <style>
         * {
             margin: 0;
@@ -23,7 +23,7 @@
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             width: 100%;
             margin: 0 auto;
         }
@@ -52,19 +52,13 @@
         }
 
         .content {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 30px;
             margin-bottom: 30px;
         }
 
-        @media (max-width: 900px) {
-            .content {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        .atom-container {
+        .atoms-container {
             background: rgba(255, 255, 255, 0.1);
             padding: 20px;
             border-radius: 15px;
@@ -74,16 +68,16 @@
             align-items: center;
         }
 
-        .atom-title {
+        .atoms-title {
             font-size: 1.8rem;
             margin-bottom: 20px;
             color: #4fc3f7;
             text-align: center;
         }
 
-        #atom-canvas {
+        #atoms-canvas {
             width: 100%;
-            height: 400px;
+            height: 600px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: 10px;
             position: relative;
@@ -205,6 +199,15 @@
             box-shadow: 0 0 5px #4fc3f7;
         }
 
+        .legend-valence {
+            background: radial-gradient(circle at 5px 5px, #ffeb3b, #fbc02d);
+            box-shadow: 0 0 5px #ffeb3b;
+        }
+
+        .atom {
+            position: absolute;
+        }
+
         .electron-shell {
             position: absolute;
             border: 2px dashed rgba(255, 255, 255, 0.3);
@@ -246,9 +249,24 @@
             box-shadow: 0 0 10px #4fc3f7;
         }
 
+        .valence-electron {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 5px 5px, #ffeb3b, #f57f17);
+            border-radius: 50%;
+            box-shadow: 0 0 10px #ffeb3b;
+        }
+
         .electron-path {
             position: absolute;
             border: 1px dashed rgba(79, 195, 247, 0.3);
+            border-radius: 50%;
+        }
+
+        .valence-path {
+            position: absolute;
+            border: 2px dashed rgba(255, 235, 59, 0.4);
             border-radius: 50%;
         }
 
@@ -306,25 +324,33 @@
             color: #e1bee7;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
+
+        .interaction-info {
+            margin-top: 15px;
+            text-align: center;
+            color: #bbdefb;
+            font-style: italic;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <header>
-            <h1>Simulador de Átomo de Silício</h1>
-            <p class="subtitle">Visualize a estrutura atômica do silício, suas camadas eletrônicas e propriedades</p>
+            <h1>Rede de Átomos de Silício</h1>
+            <p class="subtitle">Visualize 9 átomos de silício com camadas eletrônicas separadas - apenas a camada de valência se sobrepõe</p>
         </header>
 
         <div class="content">
-            <div class="atom-container">
-                <h2 class="atom-title">Estrutura Atômica do Silício</h2>
-                <div id="atom-canvas">
-                    <!-- O átomo será renderizado aqui via JavaScript -->
+            <div class="atoms-container">
+                <h2 class="atoms-title">Rede de 9 Átomos de Silício</h2>
+                <div id="atoms-canvas">
+                    <!-- Os átomos serão renderizados aqui via JavaScript -->
                 </div>
                 
                 <div class="view-controls">
                     <button id="view-orbitals" class="view-btn">Visualizar Orbitais</button>
                     <button id="view-nucleus" class="view-btn">Visualizar Núcleo</button>
+                    <button id="view-valence" class="view-btn">Destacar Valência</button>
                     <button id="reset-view" class="view-btn">Resetar Visualização</button>
                 </div>
                 
@@ -346,16 +372,24 @@
                     </div>
                     <div class="legend-item">
                         <div class="legend-color legend-electron"></div>
-                        <span>Elétrons (14)</span>
+                        <span>Elétrons Internos</span>
                     </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-valence"></div>
+                        <span>Elétrons de Valência</span>
+                    </div>
+                </div>
+
+                <div class="interaction-info">
+                    <p>Os átomos estão espaçados para evitar sobreposição das camadas internas. Apenas os elétrons de valência (amarelos) se sobrepõem, simulando interações atômicas.</p>
                 </div>
             </div>
 
             <div class="info-panel">
-                <h2>Propriedades do Silício</h2>
+                <h2>Propriedades do Silício e Interações Atômicas</h2>
                 <div class="info-content">
                     <div class="info-box">
-                        <h3>Informações Gerais</h3>
+                        <h3>Informações do Átomo</h3>
                         <div class="properties">
                             <div class="property">
                                 <span class="property-name">Símbolo:</span>
@@ -370,42 +404,8 @@
                                 <span class="property-value">28,085 u</span>
                             </div>
                             <div class="property">
-                                <span class="property-name">Grupo:</span>
-                                <span class="property-value">14 (Carbonoides)</span>
-                            </div>
-                            <div class="property">
-                                <span class="property-name">Período:</span>
-                                <span class="property-value">3</span>
-                            </div>
-                            <div class="property">
-                                <span class="property-name">Config. Eletrônica:</span>
-                                <span class="property-value">[Ne] 3s² 3p²</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="info-box">
-                        <h3>Características Físicas</h3>
-                        <div class="properties">
-                            <div class="property">
-                                <span class="property-name">Estado:</span>
-                                <span class="property-value">Sólido</span>
-                            </div>
-                            <div class="property">
-                                <span class="property-name">Densidade:</span>
-                                <span class="property-value">2,33 g/cm³</span>
-                            </div>
-                            <div class="property">
-                                <span class="property-name">Ponto de Fusão:</span>
-                                <span class="property-value">1414 °C</span>
-                            </div>
-                            <div class="property">
-                                <span class="property-name">Ponto de Ebulição:</span>
-                                <span class="property-value">3265 °C</span>
-                            </div>
-                            <div class="property">
-                                <span class="property-name">Condutividade:</span>
-                                <span class="property-value">Semicondutor</span>
+                                <span class="property-name">Elétrons de Valência:</span>
+                                <span class="property-value">4</span>
                             </div>
                         </div>
                     </div>
@@ -426,17 +426,32 @@
                                 <span class="property-value">4 elétrons</span>
                             </div>
                             <div class="property">
-                                <span class="property-name">Elétrons de Valência:</span>
-                                <span class="property-value">4</span>
+                                <span class="property-name">Raio Atômico:</span>
+                                <span class="property-value">111 pm</span>
                             </div>
                         </div>
                     </div>
-                </div>
-                
-                <div class="crystal-structure">
-                    <div class="crystal-title">Estrutura Cristalina</div>
-                    <div class="crystal-image">
-                        Estrutura Diamante (Cúbica de Face Centrada)
+                    
+                    <div class="info-box">
+                        <h3>Interações na Rede</h3>
+                        <div class="properties">
+                            <div class="property">
+                                <span class="property-name">Distância Interatômica:</span>
+                                <span class="property-value">~250 pm</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Sobreposição de Valência:</span>
+                                <span class="property-value">~20%</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Tipo de Ligação:</span>
+                                <span class="property-value">Covalente</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Energia de Ligação:</span>
+                                <span class="property-value">~2,3 eV</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -445,11 +460,12 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const canvas = document.getElementById('atom-canvas');
+            const canvas = document.getElementById('atoms-canvas');
             const rotationSlider = document.getElementById('rotation-speed');
             const electronSpeedSlider = document.getElementById('electron-speed');
             const viewOrbitalsBtn = document.getElementById('view-orbitals');
             const viewNucleusBtn = document.getElementById('view-nucleus');
+            const viewValenceBtn = document.getElementById('view-valence');
             const resetViewBtn = document.getElementById('reset-view');
             
             let animationId = null;
@@ -457,77 +473,120 @@
             let electronAngle = 0;
             let showOrbitals = true;
             let showNucleusDetail = false;
+            let highlightValence = false;
             
             const canvasWidth = canvas.offsetWidth;
             const canvasHeight = canvas.offsetHeight;
-            const centerX = canvasWidth / 2;
-            const centerY = canvasHeight / 2;
             
-            // Criar núcleo
-            const nucleus = document.createElement('div');
-            nucleus.className = 'nucleus';
-            nucleus.style.width = '80px';
-            nucleus.style.height = '80px';
-            nucleus.style.left = `${centerX - 40}px`;
-            nucleus.style.top = `${centerY - 40}px`;
-            canvas.appendChild(nucleus);
+            // Configuração da grade 3x3 com maior espaçamento
+            const gridSize = 3;
+            const atomSpacing = 280; // Aumentado para separar mais os átomos
+            const startX = (canvasWidth - (gridSize - 1) * atomSpacing) / 2;
+            const startY = (canvasHeight - (gridSize - 1) * atomSpacing) / 2;
             
-            // Criar partículas do núcleo (prótons e nêutrons)
-            if (showNucleusDetail) {
-                createNucleusParticles();
+            // Estrutura para armazenar todos os átomos, orbitais e elétrons
+            const atoms = [];
+            const allElectronPaths = [];
+            const allElectrons = [];
+            
+            // Criar 9 átomos em formação 3x3
+            for (let row = 0; row < gridSize; row++) {
+                for (let col = 0; col < gridSize; col++) {
+                    const centerX = startX + col * atomSpacing;
+                    const centerY = startY + row * atomSpacing;
+                    
+                    createAtom(centerX, centerY, row * gridSize + col);
+                }
             }
             
-            // Criar camadas eletrônicas
-            const shells = [
-                { radius: 60, electrons: 2, speed: 2 },
-                { radius: 120, electrons: 8, speed: 1.5 },
-                { radius: 180, electrons: 4, speed: 1 }
-            ];
-            
-            const electronPaths = [];
-            const electrons = [];
-            
-            shells.forEach((shell, shellIndex) => {
-                // Criar orbital
-                const orbital = document.createElement('div');
-                orbital.className = 'electron-shell';
-                orbital.style.width = `${shell.radius * 2}px`;
-                orbital.style.height = `${shell.radius * 2}px`;
-                orbital.style.left = `${centerX - shell.radius}px`;
-                orbital.style.top = `${centerY - shell.radius}px`;
-                orbital.style.display = showOrbitals ? 'block' : 'none';
-                canvas.appendChild(orbital);
-                electronPaths.push(orbital);
+            function createAtom(centerX, centerY, atomId) {
+                const atomData = {
+                    id: atomId,
+                    centerX: centerX,
+                    centerY: centerY,
+                    electronPaths: [],
+                    electrons: [],
+                    nucleus: null
+                };
                 
-                // Criar elétrons para esta camada
-                const angleStep = (2 * Math.PI) / shell.electrons;
+                atoms.push(atomData);
                 
-                for (let i = 0; i < shell.electrons; i++) {
-                    const electron = document.createElement('div');
-                    electron.className = 'electron';
-                    
-                    const angle = i * angleStep;
-                    const x = centerX + shell.radius * Math.cos(angle);
-                    const y = centerY + shell.radius * Math.sin(angle);
-                    
-                    electron.style.left = `${x - 8}px`;
-                    electron.style.top = `${y - 8}px`;
-                    
-                    canvas.appendChild(electron);
-                    electrons.push({
-                        element: electron,
-                        shellIndex: shellIndex,
-                        angle: angle,
-                        radius: shell.radius,
-                        speed: shell.speed
-                    });
+                // Criar núcleo
+                const nucleus = document.createElement('div');
+                nucleus.className = 'nucleus';
+                nucleus.style.width = '50px';
+                nucleus.style.height = '50px';
+                nucleus.style.left = `${centerX - 25}px`;
+                nucleus.style.top = `${centerY - 25}px`;
+                canvas.appendChild(nucleus);
+                atomData.nucleus = nucleus;
+                
+                // Criar partículas do núcleo (prótons e nêutrons)
+                if (showNucleusDetail) {
+                    createNucleusParticles(centerX, centerY, atomId);
                 }
-            });
+                
+                // Criar camadas eletrônicas com raios ajustados
+                const shells = [
+                    { radius: 40, electrons: 2, speed: 2, type: 'inner' },
+                    { radius: 80, electrons: 8, speed: 1.5, type: 'inner' },
+                    { radius: 120, electrons: 4, speed: 1, type: 'valence' }
+                ];
+                
+                shells.forEach((shell, shellIndex) => {
+                    // Criar orbital
+                    const orbital = document.createElement('div');
+                    orbital.className = shell.type === 'valence' ? 'valence-path' : 'electron-shell';
+                    orbital.style.width = `${shell.radius * 2}px`;
+                    orbital.style.height = `${shell.radius * 2}px`;
+                    orbital.style.left = `${centerX - shell.radius}px`;
+                    orbital.style.top = `${centerY - shell.radius}px`;
+                    orbital.style.display = showOrbitals ? 'block' : 'none';
+                    
+                    if (shell.type === 'valence' && highlightValence) {
+                        orbital.style.border = '2px dashed rgba(255, 235, 59, 0.6)';
+                    }
+                    
+                    canvas.appendChild(orbital);
+                    atomData.electronPaths.push(orbital);
+                    allElectronPaths.push(orbital);
+                    
+                    // Criar elétrons para esta camada
+                    const angleStep = (2 * Math.PI) / shell.electrons;
+                    
+                    for (let i = 0; i < shell.electrons; i++) {
+                        const electron = document.createElement('div');
+                        electron.className = shell.type === 'valence' ? 'valence-electron' : 'electron';
+                        
+                        const angle = i * angleStep;
+                        const x = centerX + shell.radius * Math.cos(angle);
+                        const y = centerY + shell.radius * Math.sin(angle);
+                        
+                        electron.style.left = `${x - 8}px`;
+                        electron.style.top = `${y - 8}px`;
+                        
+                        canvas.appendChild(electron);
+                        
+                        const electronData = {
+                            element: electron,
+                            atomId: atomId,
+                            shellIndex: shellIndex,
+                            angle: angle,
+                            radius: shell.radius,
+                            speed: shell.speed,
+                            type: shell.type
+                        };
+                        
+                        atomData.electrons.push(electronData);
+                        allElectrons.push(electronData);
+                    }
+                });
+            }
             
             // Função para criar partículas do núcleo
-            function createNucleusParticles() {
-                // Limpar partículas existentes
-                document.querySelectorAll('.proton, .neutron').forEach(p => p.remove());
+            function createNucleusParticles(centerX, centerY, atomId) {
+                // Limpar partículas existentes para este átomo
+                document.querySelectorAll(`.proton-${atomId}, .neutron-${atomId}`).forEach(p => p.remove());
                 
                 // Criar prótons e nêutrons
                 const particles = [];
@@ -545,10 +604,10 @@
                 }
                 
                 // Posicionar partículas no núcleo
-                const nucleusRadius = 40;
+                const nucleusRadius = 25;
                 particles.forEach((particle, index) => {
                     const particleEl = document.createElement('div');
-                    particleEl.className = particle.type;
+                    particleEl.className = `${particle.type} ${particle.type}-${atomId}`;
                     
                     // Posição aleatória dentro do núcleo
                     const angle = Math.random() * 2 * Math.PI;
@@ -557,14 +616,14 @@
                     const x = centerX + distance * Math.cos(angle);
                     const y = centerY + distance * Math.sin(angle);
                     
-                    particleEl.style.width = '12px';
-                    particleEl.style.height = '12px';
-                    particleEl.style.left = `${x - 6}px`;
-                    particleEl.style.top = `${y - 6}px`;
+                    particleEl.style.width = '8px';
+                    particleEl.style.height = '8px';
+                    particleEl.style.left = `${x - 4}px`;
+                    particleEl.style.top = `${y - 4}px`;
                     
                     if (particle.type === 'proton') {
                         particleEl.textContent = '+';
-                        particleEl.style.fontSize = '8px';
+                        particleEl.style.fontSize = '6px';
                     }
                     
                     canvas.appendChild(particleEl);
@@ -578,17 +637,18 @@
                 
                 // Rotacionar orbitais
                 rotationAngle += 0.002 * rotationSpeed;
-                electronPaths.forEach(orbital => {
+                allElectronPaths.forEach(orbital => {
                     orbital.style.transform = `rotate(${rotationAngle}rad)`;
                 });
                 
                 // Mover elétrons
                 electronAngle += 0.01 * electronSpeed;
                 
-                electrons.forEach(electron => {
+                allElectrons.forEach(electron => {
+                    const atom = atoms[electron.atomId];
                     const newAngle = electron.angle + electronAngle * electron.speed;
-                    const x = centerX + electron.radius * Math.cos(newAngle);
-                    const y = centerY + electron.radius * Math.sin(newAngle);
+                    const x = atom.centerX + electron.radius * Math.cos(newAngle);
+                    const y = atom.centerY + electron.radius * Math.sin(newAngle);
                     
                     electron.element.style.left = `${x - 8}px`;
                     electron.element.style.top = `${y - 8}px`;
@@ -600,7 +660,7 @@
             // Controles de visualização
             viewOrbitalsBtn.addEventListener('click', function() {
                 showOrbitals = !showOrbitals;
-                electronPaths.forEach(orbital => {
+                allElectronPaths.forEach(orbital => {
                     orbital.style.display = showOrbitals ? 'block' : 'none';
                 });
                 viewOrbitalsBtn.textContent = showOrbitals ? 
@@ -610,26 +670,56 @@
             viewNucleusBtn.addEventListener('click', function() {
                 showNucleusDetail = !showNucleusDetail;
                 if (showNucleusDetail) {
-                    createNucleusParticles();
+                    // Criar partículas do núcleo para todos os átomos
+                    atoms.forEach(atom => {
+                        createNucleusParticles(atom.centerX, atom.centerY, atom.id);
+                    });
                 } else {
+                    // Remover todas as partículas do núcleo
                     document.querySelectorAll('.proton, .neutron').forEach(p => p.remove());
                 }
                 viewNucleusBtn.textContent = showNucleusDetail ? 
                     'Ocultar Núcleo' : 'Visualizar Núcleo';
             });
             
+            viewValenceBtn.addEventListener('click', function() {
+                highlightValence = !highlightValence;
+                
+                // Atualizar aparência dos orbitais de valência
+                allElectronPaths.forEach(orbital => {
+                    if (orbital.className.includes('valence-path')) {
+                        if (highlightValence) {
+                            orbital.style.border = '2px dashed rgba(255, 235, 59, 0.6)';
+                            orbital.style.boxShadow = '0 0 10px rgba(255, 235, 59, 0.3)';
+                        } else {
+                            orbital.style.border = '2px dashed rgba(255, 235, 59, 0.4)';
+                            orbital.style.boxShadow = 'none';
+                        }
+                    }
+                });
+                
+                viewValenceBtn.textContent = highlightValence ? 
+                    'Ocultar Valência' : 'Destacar Valência';
+            });
+            
             resetViewBtn.addEventListener('click', function() {
                 showOrbitals = true;
                 showNucleusDetail = false;
+                highlightValence = false;
                 
-                electronPaths.forEach(orbital => {
+                allElectronPaths.forEach(orbital => {
                     orbital.style.display = 'block';
+                    if (orbital.className.includes('valence-path')) {
+                        orbital.style.border = '2px dashed rgba(255, 235, 59, 0.4)';
+                        orbital.style.boxShadow = 'none';
+                    }
                 });
                 
                 document.querySelectorAll('.proton, .neutron').forEach(p => p.remove());
                 
                 viewOrbitalsBtn.textContent = 'Visualizar Orbitais';
                 viewNucleusBtn.textContent = 'Visualizar Núcleo';
+                viewValenceBtn.textContent = 'Destacar Valência';
                 
                 rotationSlider.value = 50;
                 electronSpeedSlider.value = 50;
