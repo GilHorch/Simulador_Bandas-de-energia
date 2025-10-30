@@ -1,115 +1,643 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Movimento Vertical de Bloquinhos</title>
-<style>
-  body {
-    font-family: system-ui, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: #f2f4f8;
-    height: 100vh;
-    margin: 0;
-  }
-  h1 { margin: 12px 0; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Átomo de Silício</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
 
-  #area {
-    position: relative;
-    width: 400px;
-    height: 400px;
-    border: 2px solid #444;
-    background: linear-gradient(to top, #dce3f5, #f8fbff);
-    overflow: hidden;
-    border-radius: 10px;
-  }
+        body {
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
 
-  .bloco {
-    position: absolute;
-    width: 40px;
-    height: 40px;
-    background: #3498db;
-    border-radius: 6px;
-    bottom: 0;
-    transition: bottom 1s ease;
-  }
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            margin: 0 auto;
+        }
 
-  .painel {
-    margin: 10px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
 
-  input[type=number] {
-    width: 60px;
-    padding: 4px;
-    border-radius: 4px;
-    border: 1px solid #aaa;
-  }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            color: #4fc3f7;
+            text-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+        }
 
-  button {
-    padding: 6px 12px;
-    border: none;
-    background: #0078d7;
-    color: white;
-    border-radius: 6px;
-    cursor: pointer;
-  }
-  button:hover {
-    background: #005ea8;
-  }
-</style>
+        .subtitle {
+            font-size: 1.2rem;
+            color: #bbdefb;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        @media (max-width: 900px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .atom-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .atom-title {
+            font-size: 1.8rem;
+            margin-bottom: 20px;
+            color: #4fc3f7;
+            text-align: center;
+        }
+
+        #atom-canvas {
+            width: 100%;
+            height: 400px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            width: 100%;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(to right, #00c6ff, #0072ff);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 10px rgba(0, 114, 255, 0.3);
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 15px rgba(0, 114, 255, 0.4);
+        }
+
+        button:active {
+            transform: translateY(1px);
+        }
+
+        .info-panel {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .info-panel h2 {
+            color: #4fc3f7;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .info-content {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .info-box {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .info-box h3 {
+            color: #bbdefb;
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 5px;
+        }
+
+        .properties {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .property {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed rgba(255, 255, 255, 0.1);
+        }
+
+        .property-name {
+            color: #bbdefb;
+        }
+
+        .property-value {
+            color: #4fc3f7;
+            font-weight: bold;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .legend-nucleus {
+            background: radial-gradient(circle at 5px 5px, #ff5252, #b71c1c);
+            box-shadow: 0 0 5px #ff5252;
+        }
+
+        .legend-electron {
+            background: radial-gradient(circle at 5px 5px, #4fc3f7, #01579b);
+            box-shadow: 0 0 5px #4fc3f7;
+        }
+
+        .electron-shell {
+            position: absolute;
+            border: 2px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+        }
+
+        .nucleus {
+            position: absolute;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #ff5252, #b71c1c);
+            box-shadow: 0 0 20px #ff5252;
+        }
+
+        .proton, .neutron {
+            position: absolute;
+            border-radius: 50%;
+            font-size: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .proton {
+            background: radial-gradient(circle at 30% 30%, #ff6b6b, #c23616);
+        }
+
+        .neutron {
+            background: radial-gradient(circle at 30% 30%, #dcdde1, #7f8fa6);
+        }
+
+        .electron {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 5px 5px, #4fc3f7, #01579b);
+            border-radius: 50%;
+            box-shadow: 0 0 10px #4fc3f7;
+        }
+
+        .electron-path {
+            position: absolute;
+            border: 1px dashed rgba(79, 195, 247, 0.3);
+            border-radius: 50%;
+        }
+
+        .view-controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .view-btn {
+            padding: 8px 15px;
+            font-size: 0.9rem;
+        }
+
+        .orbital-controls {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        .orbital-control {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex-grow: 1;
+        }
+
+        .crystal-structure {
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .crystal-title {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+            color: #4fc3f7;
+        }
+
+        .crystal-image {
+            width: 100%;
+            max-width: 400px;
+            height: 200px;
+            background: linear-gradient(45deg, #7e57c2, #5e35b1);
+            border-radius: 10px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #e1bee7;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>Simulador de Átomo de Silício</h1>
+            <p class="subtitle">Visualize a estrutura atômica do silício, suas camadas eletrônicas e propriedades</p>
+        </header>
 
-<h1>Simulador de Bloquinhos Verticais</h1>
+        <div class="content">
+            <div class="atom-container">
+                <h2 class="atom-title">Estrutura Atômica do Silício</h2>
+                <div id="atom-canvas">
+                    <!-- O átomo será renderizado aqui via JavaScript -->
+                </div>
+                
+                <div class="view-controls">
+                    <button id="view-orbitals" class="view-btn">Visualizar Orbitais</button>
+                    <button id="view-nucleus" class="view-btn">Visualizar Núcleo</button>
+                    <button id="reset-view" class="view-btn">Resetar Visualização</button>
+                </div>
+                
+                <div class="orbital-controls">
+                    <div class="orbital-control">
+                        <label for="rotation-speed">Velocidade de Rotação:</label>
+                        <input type="range" id="rotation-speed" min="0" max="100" value="50">
+                    </div>
+                    <div class="orbital-control">
+                        <label for="electron-speed">Velocidade dos Elétrons:</label>
+                        <input type="range" id="electron-speed" min="0" max="100" value="50">
+                    </div>
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-item">
+                        <div class="legend-color legend-nucleus"></div>
+                        <span>Núcleo (14 prótons + 14 nêutrons)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color legend-electron"></div>
+                        <span>Elétrons (14)</span>
+                    </div>
+                </div>
+            </div>
 
-<div class="painel">
-  <label>Quantidade de bloquinhos:</label>
-  <input type="number" id="qtd" min="1" max="10" value="3">
-  <label>Altura (px):</label>
-  <input type="number" id="altura" min="10" max="350" value="200">
-  <button id="mover">Mover Bloquinhos</button>
-</div>
+            <div class="info-panel">
+                <h2>Propriedades do Silício</h2>
+                <div class="info-content">
+                    <div class="info-box">
+                        <h3>Informações Gerais</h3>
+                        <div class="properties">
+                            <div class="property">
+                                <span class="property-name">Símbolo:</span>
+                                <span class="property-value">Si</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Número Atômico:</span>
+                                <span class="property-value">14</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Massa Atômica:</span>
+                                <span class="property-value">28,085 u</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Grupo:</span>
+                                <span class="property-value">14 (Carbonoides)</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Período:</span>
+                                <span class="property-value">3</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Config. Eletrônica:</span>
+                                <span class="property-value">[Ne] 3s² 3p²</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h3>Características Físicas</h3>
+                        <div class="properties">
+                            <div class="property">
+                                <span class="property-name">Estado:</span>
+                                <span class="property-value">Sólido</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Densidade:</span>
+                                <span class="property-value">2,33 g/cm³</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Ponto de Fusão:</span>
+                                <span class="property-value">1414 °C</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Ponto de Ebulição:</span>
+                                <span class="property-value">3265 °C</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Condutividade:</span>
+                                <span class="property-value">Semicondutor</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h3>Camadas Eletrônicas</h3>
+                        <div class="properties">
+                            <div class="property">
+                                <span class="property-name">K (1s²):</span>
+                                <span class="property-value">2 elétrons</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">L (2s² 2p⁶):</span>
+                                <span class="property-value">8 elétrons</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">M (3s² 3p²):</span>
+                                <span class="property-value">4 elétrons</span>
+                            </div>
+                            <div class="property">
+                                <span class="property-name">Elétrons de Valência:</span>
+                                <span class="property-value">4</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="crystal-structure">
+                    <div class="crystal-title">Estrutura Cristalina</div>
+                    <div class="crystal-image">
+                        Estrutura Diamante (Cúbica de Face Centrada)
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div id="area"></div>
-
-<script>
-const area = document.getElementById('area');
-const moverBtn = document.getElementById('mover');
-const qtdInput = document.getElementById('qtd');
-const alturaInput = document.getElementById('altura');
-
-// Cria 10 bloquinhos fixos na base
-const total = 10;
-const blocos = [];
-for (let i = 0; i < total; i++) {
-  const b = document.createElement('div');
-  b.classList.add('bloco');
-  b.style.left = `${i * 40 + 10}px`;
-  area.appendChild(b);
-  blocos.push(b);
-}
-
-// Função de movimento
-moverBtn.addEventListener('click', () => {
-  const qtd = Math.min(Number(qtdInput.value), total);
-  const altura = Number(alturaInput.value);
-
-  blocos.forEach((b, i) => {
-    if (i < qtd) {
-      b.style.bottom = altura + 'px';
-      b.style.background = '#2ecc71'; // muda cor ao subir
-    } else {
-      b.style.bottom = '0px';
-      b.style.background = '#3498db';
-    }
-  });
-});
-</script>
-
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const canvas = document.getElementById('atom-canvas');
+            const rotationSlider = document.getElementById('rotation-speed');
+            const electronSpeedSlider = document.getElementById('electron-speed');
+            const viewOrbitalsBtn = document.getElementById('view-orbitals');
+            const viewNucleusBtn = document.getElementById('view-nucleus');
+            const resetViewBtn = document.getElementById('reset-view');
+            
+            let animationId = null;
+            let rotationAngle = 0;
+            let electronAngle = 0;
+            let showOrbitals = true;
+            let showNucleusDetail = false;
+            
+            const canvasWidth = canvas.offsetWidth;
+            const canvasHeight = canvas.offsetHeight;
+            const centerX = canvasWidth / 2;
+            const centerY = canvasHeight / 2;
+            
+            // Criar núcleo
+            const nucleus = document.createElement('div');
+            nucleus.className = 'nucleus';
+            nucleus.style.width = '80px';
+            nucleus.style.height = '80px';
+            nucleus.style.left = `${centerX - 40}px`;
+            nucleus.style.top = `${centerY - 40}px`;
+            canvas.appendChild(nucleus);
+            
+            // Criar partículas do núcleo (prótons e nêutrons)
+            if (showNucleusDetail) {
+                createNucleusParticles();
+            }
+            
+            // Criar camadas eletrônicas
+            const shells = [
+                { radius: 60, electrons: 2, speed: 2 },
+                { radius: 120, electrons: 8, speed: 1.5 },
+                { radius: 180, electrons: 4, speed: 1 }
+            ];
+            
+            const electronPaths = [];
+            const electrons = [];
+            
+            shells.forEach((shell, shellIndex) => {
+                // Criar orbital
+                const orbital = document.createElement('div');
+                orbital.className = 'electron-shell';
+                orbital.style.width = `${shell.radius * 2}px`;
+                orbital.style.height = `${shell.radius * 2}px`;
+                orbital.style.left = `${centerX - shell.radius}px`;
+                orbital.style.top = `${centerY - shell.radius}px`;
+                orbital.style.display = showOrbitals ? 'block' : 'none';
+                canvas.appendChild(orbital);
+                electronPaths.push(orbital);
+                
+                // Criar elétrons para esta camada
+                const angleStep = (2 * Math.PI) / shell.electrons;
+                
+                for (let i = 0; i < shell.electrons; i++) {
+                    const electron = document.createElement('div');
+                    electron.className = 'electron';
+                    
+                    const angle = i * angleStep;
+                    const x = centerX + shell.radius * Math.cos(angle);
+                    const y = centerY + shell.radius * Math.sin(angle);
+                    
+                    electron.style.left = `${x - 8}px`;
+                    electron.style.top = `${y - 8}px`;
+                    
+                    canvas.appendChild(electron);
+                    electrons.push({
+                        element: electron,
+                        shellIndex: shellIndex,
+                        angle: angle,
+                        radius: shell.radius,
+                        speed: shell.speed
+                    });
+                }
+            });
+            
+            // Função para criar partículas do núcleo
+            function createNucleusParticles() {
+                // Limpar partículas existentes
+                document.querySelectorAll('.proton, .neutron').forEach(p => p.remove());
+                
+                // Criar prótons e nêutrons
+                const particles = [];
+                for (let i = 0; i < 14; i++) {
+                    particles.push({ type: 'proton' });
+                }
+                for (let i = 0; i < 14; i++) {
+                    particles.push({ type: 'neutron' });
+                }
+                
+                // Embaralhar partículas
+                for (let i = particles.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [particles[i], particles[j]] = [particles[j], particles[i]];
+                }
+                
+                // Posicionar partículas no núcleo
+                const nucleusRadius = 40;
+                particles.forEach((particle, index) => {
+                    const particleEl = document.createElement('div');
+                    particleEl.className = particle.type;
+                    
+                    // Posição aleatória dentro do núcleo
+                    const angle = Math.random() * 2 * Math.PI;
+                    const distance = Math.random() * nucleusRadius * 0.7;
+                    
+                    const x = centerX + distance * Math.cos(angle);
+                    const y = centerY + distance * Math.sin(angle);
+                    
+                    particleEl.style.width = '12px';
+                    particleEl.style.height = '12px';
+                    particleEl.style.left = `${x - 6}px`;
+                    particleEl.style.top = `${y - 6}px`;
+                    
+                    if (particle.type === 'proton') {
+                        particleEl.textContent = '+';
+                        particleEl.style.fontSize = '8px';
+                    }
+                    
+                    canvas.appendChild(particleEl);
+                });
+            }
+            
+            // Função de animação
+            function animate() {
+                const rotationSpeed = rotationSlider.value / 50;
+                const electronSpeed = electronSpeedSlider.value / 50;
+                
+                // Rotacionar orbitais
+                rotationAngle += 0.002 * rotationSpeed;
+                electronPaths.forEach(orbital => {
+                    orbital.style.transform = `rotate(${rotationAngle}rad)`;
+                });
+                
+                // Mover elétrons
+                electronAngle += 0.01 * electronSpeed;
+                
+                electrons.forEach(electron => {
+                    const newAngle = electron.angle + electronAngle * electron.speed;
+                    const x = centerX + electron.radius * Math.cos(newAngle);
+                    const y = centerY + electron.radius * Math.sin(newAngle);
+                    
+                    electron.element.style.left = `${x - 8}px`;
+                    electron.element.style.top = `${y - 8}px`;
+                });
+                
+                animationId = requestAnimationFrame(animate);
+            }
+            
+            // Controles de visualização
+            viewOrbitalsBtn.addEventListener('click', function() {
+                showOrbitals = !showOrbitals;
+                electronPaths.forEach(orbital => {
+                    orbital.style.display = showOrbitals ? 'block' : 'none';
+                });
+                viewOrbitalsBtn.textContent = showOrbitals ? 
+                    'Ocultar Orbitais' : 'Visualizar Orbitais';
+            });
+            
+            viewNucleusBtn.addEventListener('click', function() {
+                showNucleusDetail = !showNucleusDetail;
+                if (showNucleusDetail) {
+                    createNucleusParticles();
+                } else {
+                    document.querySelectorAll('.proton, .neutron').forEach(p => p.remove());
+                }
+                viewNucleusBtn.textContent = showNucleusDetail ? 
+                    'Ocultar Núcleo' : 'Visualizar Núcleo';
+            });
+            
+            resetViewBtn.addEventListener('click', function() {
+                showOrbitals = true;
+                showNucleusDetail = false;
+                
+                electronPaths.forEach(orbital => {
+                    orbital.style.display = 'block';
+                });
+                
+                document.querySelectorAll('.proton, .neutron').forEach(p => p.remove());
+                
+                viewOrbitalsBtn.textContent = 'Visualizar Orbitais';
+                viewNucleusBtn.textContent = 'Visualizar Núcleo';
+                
+                rotationSlider.value = 50;
+                electronSpeedSlider.value = 50;
+            });
+            
+            // Iniciar animação
+            animate();
+        });
+    </script>
 </body>
 </html>
