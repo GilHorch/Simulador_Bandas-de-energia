@@ -1,0 +1,1 @@
+# Simulador_Bandas-de-energia
